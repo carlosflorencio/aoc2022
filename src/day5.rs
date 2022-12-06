@@ -51,6 +51,25 @@ pub fn part1(input: &(Vec<Vec<char>>, Vec<Vec<usize>>)) -> String {
     board.iter().map(|v| v.last().unwrap()).collect::<String>()
 }
 
+#[aoc(day5, part2)]
+pub fn part2(input: &(Vec<Vec<char>>, Vec<Vec<usize>>)) -> String {
+    let input = input.clone(); // cargo aoc workaround
+    let mut board = input.0;
+    let moves = input.1;
+
+    for m in moves {
+        let mut s: Vec<char> = vec![];
+        for _ in 0..m[0] {
+            let t = board[m[1] - 1].pop().unwrap();
+            s.push(t);
+        }
+
+        s.iter().rev().for_each(|c| board[m[2] - 1].push(*c));
+    }
+
+    board.iter().map(|v| v.last().unwrap()).collect::<String>()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -68,5 +87,10 @@ move 1 from 1 to 2"##;
     #[test]
     fn test_example_input() {
         assert_eq!("CMZ", part1(&parse_input_day(INPUT)));
+    }
+
+    #[test]
+    fn test_example_input_part2() {
+        assert_eq!("MCD", part2(&parse_input_day(INPUT)));
     }
 }
