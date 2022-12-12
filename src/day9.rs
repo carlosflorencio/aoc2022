@@ -1,8 +1,5 @@
-use std::collections::{HashMap, HashSet};
-use std::fmt::Debug;
-use std::io::{repeat, Read};
-use std::ops::{Add, AddAssign, SubAssign};
-use std::{fmt, iter};
+use std::collections::HashSet;
+use std::iter;
 
 #[derive(Clone, Hash, Eq, PartialEq)]
 struct Point {
@@ -10,9 +7,24 @@ struct Point {
     y: i32,
 }
 
-impl Debug for Point {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "({}, {})", self.x, self.y)
+impl Point {
+    fn move_to(&mut self, direction: &Point) {
+        *self = Point {
+            x: self.x + direction.x,
+            y: self.y + direction.y,
+        }
+    }
+
+    fn is_adjacent(&self, other: &Point) -> bool {
+        self.x.abs_diff(other.x) <= 1 && self.y.abs_diff(other.y) <= 1
+    }
+
+    fn follow(&mut self, head: &Point) {
+        let dx = head.x - self.x;
+        let dy = head.y - self.y;
+
+        self.x += if dx.abs() == 2 { dx / 2 } else { dx };
+        self.y += if dy.abs() == 2 { dy / 2 } else { dy };
     }
 }
 
@@ -71,16 +83,10 @@ fn part1(input: &Input) -> usize {
     for (dir, amount) in input {
         for _ in 0..*amount {
             let delta = dir.delta();
-            head = Point {
-                x: head.x + delta.x,
-                y: head.y + delta.y,
-            };
+            head.move_to(&delta);
 
-            if tail.x.abs_diff(head.x) > 1 || tail.y.abs_diff(head.y) > 1 {
-                tail = Point {
-                    x: head.x - delta.x,
-                    y: head.y - delta.y,
-                };
+            if !tail.is_adjacent(&head) {
+                tail.follow(&head);
                 visits.insert(tail.clone());
             }
         }
@@ -91,25 +97,31 @@ fn part1(input: &Input) -> usize {
 
 #[aoc(day9, part2)]
 fn part2(input: &Input) -> usize {
-    let mut head = Point { x: 0, y: 0 };
-    let mut tails: Vec<Point> = iter::repeat(head.clone()).take(9).collect();
+    let mut knots: Vec<Point> = Vec::with_capacity(10);
     let mut visits = Visits::new();
 
-    visits.insert(head.clone());
+    knots.push(Point { x: 0, y: 0 });
+    iter::repeat(knots[0].clone())
+        .take(9)
+        .for_each(|tail| knots.push(tail));
+
+    visits.insert(knots[0].clone());
 
     for (dir, amount) in input {
         for _ in 0..*amount {
             let delta = dir.delta();
-            head = Point {
-                x: head.x + delta.x,
-                y: head.y + delta.y,
-            };
+            let head = &mut knots[0];
+            head.x = head.x + delta.x;
+            head.y = head.y + delta.y;
 
-            for i in 0..tails.len() {
-                let prev: &Point = if i == 0 { &head } else { &tails[0] };
-
-                let curr = &tails[i];
+            for i in 1..knots.len() {
+                let prev = &knots[i - 1].clone();
+                if !knots[i].is_adjacent(&knots[i - 1]) {
+                    knots[i].follow(prev);
+                }
             }
+
+            visits.insert(knots[knots.len() - 1].clone());
         }
     }
 
